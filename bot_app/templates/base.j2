@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Red Nails Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,500;0,600;0,800;0,900;1,100;1,200;1,300;1,500;1,700;1,800;1,900&family=Shantell+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&display=swap"
+          rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"></div><div class="logo-name">Red Nails Studio</div>
+    </header>
+
+{#    <div class="content">#}
+{#        <h1>«Ой дєвачкі,<BR class="visible-sm"> записуємось на ноготочкі!»</h1>#}
+{#        <h2>With this magic Bot you can:</h2>#}
+{#        <p class="feature">get information about our services</p>#}
+{#        <p class="feature">review out prices</p>#}
+{#        <p class="feature">schedule an appointment</p>#}
+{#        <a class="btn" href="https://t.me/red_nails_bot" role="button">Open Bot</a>#}
+{#    </div>#}
+
+        <div class="main_container" style="margin-bottom: 15px;">
+            {% block content %}{% endblock %}
+        </div>
+
+    <footer>
+        <a href="https://github.com/verovkin" target="_blank">© Dmytro Verovkin – 2023</a>
+    </footer>
+
+</body>
+</html>
