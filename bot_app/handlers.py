@@ -1,43 +1,156 @@
+
 import json
 from pprint import pprint
-
+from flask import request
 import requests
-from .services import WeatherService, WeatherServiceException
+from bot_app import app, db
+from .config import Messages, AppConfig, select_options
+from .models import *
 
 
-BOT_TOKEN = '5974234125:AAHTQkq5Mw-ZdqgySje8XN1dFVcJU82YqPY'  # TODO move to env
-TG_BASE_URL = 'https://api.telegram.org/bot'
+BOT_TOKEN = app.config.get('BOT_TOKEN')
+TG_URL = 'https://api.telegram.org/bot' + BOT_TOKEN
 
-WEATHER_TYPE = 'weather'
 
 
 class User:
     def __init__(self, first_name, id, is_bot, language_code, username):
-        self.first_name = first_name
-        self.id = id
+        self.name = first_name
+        self.chat_id = id
         self.is_bot = is_bot
         self.language_code = language_code
         self.username = username
 
 
+
+
 class TelegramHandler:
-    users = None
+    # users = None
 
     def send_markup_message(self, text, markup):
         data = {
-            'chat_id': self.user.id,
+            'chat_id': self.user.chat_id,
             'text': text,
             'reply_markup': markup,
         }
-        requests.post(f'{TG_BASE_URL}{BOT_TOKEN}/sendMessage', json=data)
+        requests.post(f'{TG_URL}/sendMessage', json=data)
 
 
     def send_message(self, text):
         data = {
-            'chat_id': self.user.id,
+            'chat_id': self.user.chat_id,
             'text': text,
         }
-        requests.post(f'{TG_BASE_URL}{BOT_TOKEN}/sendMessage', json=data)
+        requests.post(f'{TG_URL}/sendMessage', json=data)
+
+
+    def send_hello_message(self):
+        self.send_message(Messages.WELCOME)
+
+    def show_start_menu(self):
+        buttons = []
+
+        for option in select_options:
+            menu_button = {
+                'text': f"{option.get('id')} - {option.get('name')}",
+                'callback_data': json.dumps(
+                    {
+                        'type': 'menu',
+                        'id': option.get('id'),
+                    }
+                ),
+            }
+            buttons.append([menu_button])
+        markup = {
+            'inline_keyboard': buttons
+        }
+        self.send_markup_message(Messages.CHOICE, markup)
+
+
+
+
+
+    def show_procedure_list(self):
+        buttons = []
+        procedures = db.session.query(Procedure).all()
+
+        for procedure in procedures:
+            procedure_button = {
+                'text': f'{procedure.name} ({procedure.duration_minutes}min) - {procedure.price}UAH',
+                'callback_data': json.dumps(
+                    {
+                        'type': 'procedure',
+                        'id': procedure.id
+                    }
+                ),
+            }
+            buttons.append([procedure_button])
+
+        back_button = {
+            'text': 'Go back',
+            'callback_data': json.dumps(
+                {
+                    'type': "back",
+                    'id': 1,
+                 }
+            ),
+        }
+        buttons.append([back_button])
+        markup = {
+            'inline_keyboard': buttons
+        }
+
+        self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
+
+
+    def show_how_to_get_us(self):
+        buttons = []
+        #
+        menu_button = {
+            'text': "Show in Google Maps",
+            'url': Messages.ADDRESS_FOR_URL,
+        }
+        buttons.append([menu_button])
+        back_button = {
+            'text': 'Go back',
+            'callback_data': json.dumps(
+                {
+                    'type': "back",
+                    'id': 1,    # back to level 1
+                }
+            ),
+        }
+        buttons.append([back_button])
+        markup = {
+            'inline_keyboard': buttons
+        }
+        self.send_markup_message(Messages.ADDRESS_TEXT, markup)
+
+
+
+        # procedures = db.session.query(Procedure).all()
+        #
+        # for procedure in procedures:
+        #     procedure_button = {
+        #         'text': f'{procedure.name} ({procedure.duration_minutes}min) - {procedure.price}UAH',
+        #         'callback_data': json.dumps(
+        #             {'procedure_id': procedure.id}
+        #         ),
+        #     }
+        #     buttons.append([procedure_button])
+        # markup = {
+        #     'inline_keyboard': buttons
+        # }
+        #
+        # self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
+
+
+
+
+
+    def show_about_us(self):
+        self.send_message(Messages.ABOUT_US)
+
 
 
 
@@ -45,44 +158,61 @@ class MessageHandler(TelegramHandler):
     def __init__(self, data):
         self.user = User(**data.get('from'))
         self.text = data.get('text')
+        self.check_user_exist()
+
+    def check_user_exist(self):
+        # check if user_id is in DB
+        client_list_with_id = db.session.query(Client).filter(Client.tg_id == self.user.chat_id).all()
+        if len(client_list_with_id) < 1:
+            # add a new client to DB
+            client = Client(tg_id=self.user.chat_id, name=self.user.name)
+            db.session.add(client)
+            db.session.commit()
+            self.send_hello_message()
+
+
+
+
+
 
     def handle(self):
-        match self.text.split():
-            case WEATHER_TYPE, city:
-                try:
-                    geo_data = WeatherService.get_geo_data(city)
-                    pprint(geo_data)
-                except WeatherServiceException as wse:
-                    self.send_message(str(wse))
-                else:
-                    buttons = []
-                    for item in geo_data:
-                        test_button = {
-                            'text': f'{item.get("country")}, {item.get("name")}',
-                            'callback_data': json.dumps(
-                                {'type': WEATHER_TYPE, 'lat': item.get("latitude"), 'lon': item.get('longitude')}
-                            ),
-                        }
-                        buttons.append([test_button])
-                    markup = {
-                        'inline_keyboard': buttons
-                    }
-                    self.send_markup_message('Choose a city', markup)
+
+        match self.text:
+            case '/start':
+                self.show_start_menu()
+            case '/procedures':
+                self.show_procedure_list()
+            case _:
+                self.send_message(Messages.DEFAULT)
+
 
 
 class CallbackHandler(TelegramHandler):
-
     def __init__(self, data):
         self.user = User(**data.get('from'))
-        self.callback_data = json.loads(data.get('data'))
+        self.callback_data = json.loads(data.get("data"))
+
 
     def handle(self):
-        callback_type = self.callback_data.pop('type')
-        match callback_type:
-            case WEATHER_TYPE:
-                try:
-                    weather = WeatherService.get_current_weatrher_by_geo_data(**self.callback_data)
-                except WeatherServiceException as wse:
-                    self.send_message(str(wse))
-                else:
-                    self.send_message(json.dumps(weather))
+        match self.callback_data.get("type"):
+            case 'back':
+                self.show_start_menu()
+
+            case 'menu':
+                match self.callback_data.get("id"):
+                    case 1:
+                        self.show_procedure_list()
+                    case 2:
+                        pass
+                    case 3:
+                        self.show_how_to_get_us()
+                    case 4:
+                        self.show_about_us()
+
+            case 'procedure':
+                match self.callback_data.get("id"):
+                    case 1:
+                        pass
+                    case 2:
+                        pass
+

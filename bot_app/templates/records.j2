@@ -1,0 +1,32 @@
+{% extends "base.j2" %}
+{% block content %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <td>#</td>
+                        <td>Date Time</td>
+                        <td>Client</td>
+                        <td>Procedure</td>
+                        <td>Duration</td>
+                        <td>Price</td>
+                    </tr>
+                </thead>
+
+               {% for record, client, procedure in procedures %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>{{ record.datetime }}</td>
+                        <td>{{ client.name }}</td>
+                        <td>{{ procedure.name }}</td>
+                        <td>{{ procedure.duration_minutes }}</td>
+                        <td>{{ procedure.price }}</td>
+                    </tr>
+               {% endfor %}
+
+            </table>
+
+{% endblock %}
+
+
+
