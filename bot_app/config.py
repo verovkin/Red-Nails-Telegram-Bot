@@ -14,7 +14,6 @@ class AppConfig:
     BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 
-
 class Messages:
     WELCOME = 'Hi and welcome, to our <b>Red Nail Studio!<b>'
     CHOICE = 'Please make your choice:'
@@ -23,21 +22,22 @@ class Messages:
     ADDRESS_FOR_URL = "https://goo.gl/maps/RZAHjuneLTZHrr1F7"
     ABOUT_US = 'We are the best <b>Nail Studio</b> in the Universe, we can do simultaneously not only right hand, but also left hand!'
     SCHEDULED = 'We are waiting for you '
-    NON_SCHEDULED = "You have not scheduled your visit yet."
+    NON_SCHEDULED = "You have no scheduled visits yet."
     CHOOSE_DAY = "Available days:"
     CHOOSE_TIME = "Available time"
     DEFAULT = "Sorry, I don't understand you, please try again."
+    CONFIRMED = "Your visit booked!"
 
 
 select_options = [
-    {'id': 1, 'type': 'menu', 'name': 'Procedure List'},
-    {'id': 2, 'type': 'menu', 'name': 'Your planned visit'},
-    {'id': 3, 'type': 'menu', 'name': 'How to get us'},
-    {'id': 4, 'type': 'menu', 'name': 'About us'},
+    {'id': 'procedure_list', 'type': 'menu', 'name': 'Procedure List'},
+    {'id': 'planned_visit', 'type': 'menu', 'name': 'Your planned visit'},
+    {'id': '/address', 'type': 'menu', 'name': 'How to get us'},
+    {'id': '/about', 'type': 'menu', 'name': 'About us'},
 ]
 
 
 class WorkingSetting:
     WORKING_HOUR_START = 10
-    WORKING_HOUR_END = 20
+    WORKING_HOUR_END = 19
     SHOW_NUMBER_OF_DAYS = 7
