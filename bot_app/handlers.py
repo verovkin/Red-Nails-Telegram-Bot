@@ -27,7 +27,6 @@ class User:
         self.selected_procedure = None
 
 
-
 class TelegramHandler:
 
     def send_markup_message(self, text, markup):
@@ -69,7 +68,6 @@ class TelegramHandler:
         }
         self.send_markup_message(Messages.CHOICE, markup)
 
-
     def show_how_to_get_us(self):
         buttons = []
         menu_button = {
@@ -110,7 +108,6 @@ class TelegramHandler:
         #
         # self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
-
     def show_about_us(self):
         buttons = []
         back_button = {
@@ -127,6 +124,45 @@ class TelegramHandler:
             'inline_keyboard': buttons
         }
         self.send_markup_message(Messages.ABOUT_US, markup)
+
+
+
+class MessageHandler(TelegramHandler):
+    def __init__(self, data):
+        self.user = User(**data.get('from'))
+        self.text = data.get('text')
+        self.check_user_exist()
+
+    def check_user_exist(self):
+        # check if user_id is in DB
+        client_list_with_id = db.session.query(Client).filter(Client.tg_id == self.user.chat_id).all()
+        if len(client_list_with_id) < 1:
+            # add a new client to DB
+            client = Client(tg_id=self.user.chat_id, name=self.user.name)
+            db.session.add(client)
+            db.session.commit()
+            self.send_hello_message()
+
+    def handle(self):
+        match self.text:
+            case '/start':
+                self.show_start_menu()
+            case '/procedures':
+                self.show_procedure_list()
+            case '/address':
+                self.show_how_to_get_us()
+            case '/about':
+                self.show_about_us()
+            case _:
+                self.send_message(Messages.DEFAULT)
+
+
+class CallbackHandler(TelegramHandler):
+    def __init__(self, data):
+        self.user = User(**data.get('from'))
+        self.callback_data = json.loads(data.get("data"))
+
+
 
     def show_records(self):
         client_records = db.session.query(Record, Client, Procedure).join(Client).join(Procedure).filter(Client.tg_id == self.user.chat_id).all()
@@ -182,6 +218,9 @@ class TelegramHandler:
             #     self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
     def show_procedure_list(self):
+        self.user.selected_procedure = None
+        self.user.selected_date = None
+        self.user.selected_time = None
 
         print("==show procedures")
         buttons = []
@@ -193,7 +232,7 @@ class TelegramHandler:
                 'callback_data': json.dumps(
                     {
                         'type': 'sel_procedure',
-                        'procedure_id': procedure.id
+                        'id': procedure.id
                     }
                 ),
             }
@@ -214,8 +253,9 @@ class TelegramHandler:
         }
         self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
-    def show_available_days(self, procedure_id):
-        print("show days")
+    def show_available_days(self):
+        self.user.selected_date = None
+        self.user.selected_time = None
 
         buttons = []
 
@@ -223,15 +263,13 @@ class TelegramHandler:
 
             the_date = date.today() + timedelta(days=i)
             date_to_show = the_date.strftime("%a, %d %b")
-            the_date_str = str(the_date)
 
             date_button = {
                 'text': date_to_show,
                 'callback_data': json.dumps(
                     {
                         'type': 'sel_date',
-                        'date': the_date_str,
-                        'procedure_id': procedure_id
+                        'date': str(the_date),
                     }
                 ),
             }
@@ -251,33 +289,78 @@ class TelegramHandler:
         markup = {'inline_keyboard': buttons}
         self.send_markup_message(Messages.CHOOSE_DAY, markup)
 
-    def show_available_time(self, the_date, procedure_id):
+    def show_available_time(self):
+        self.user.selected_time = None
         print("show times")
-        procedure_duration = db.session.query(Procedure.duration_minutes).filter_by(id=procedure_id).one()[0]
+        # procedure_duration = db.session.query(Procedure.duration_minutes).filter_by(id=self.user.selected_procedure).one()[0]
 
-        day_start = datetime.strptime(the_date, '%Y-%m-%d').replace(hour=WorkingSetting.WORKING_HOUR_START)
-        day_end = datetime.strptime(the_date, '%Y-%m-%d').replace(hour=WorkingSetting.WORKING_HOUR_END)
+        day_start = self.user.selected_date.replace(hour=WorkingSetting.WORKING_HOUR_START)
+        day_end = self.user.selected_date.replace(hour=WorkingSetting.WORKING_HOUR_END)
         time_delta = timedelta(minutes=30)
 
-        buttons = []
+        buttons_tmp = []
 
         while day_start < day_end:
-            day_start += time_delta
 
-            time_txt = day_start.strftime("%h:%M")
-            print(day_start, time_txt)
+            time_txt = day_start.strftime("%-H:%M")
+
 
             time_button = {
                 'text': time_txt,
                 'callback_data': json.dumps(
                     {
                         'type': 'sel_time',
-                        'datetime': str(day_start),
-                        'pr_id': procedure_id,
+                        'time': time_txt,
+                        # 'datetime': str(day_start),
                     }
                 ),
             }
-            buttons.append([time_button])
+            day_start += time_delta
+
+            buttons_tmp.append(time_button)
+
+
+        max_time_in_row = 3
+        num_of_rows = len(buttons_tmp) // max_time_in_row
+        buttons = []
+        button_row = []
+        counter_btn = 0
+
+        counter_in_row = 0
+        while len(buttons_tmp) > 0:
+            if counter_in_row < max_time_in_row:
+                button_row.append([buttons_tmp.pop(0)])
+                counter_in_row += 1
+                print(button_row)
+            else:
+                buttons.append(button_row)
+                button_row = []
+                counter_in_row = 0
+                print(button_row)
+
+        # for btn in buttons_tmp:
+        #     if counter_btn < max_time_in_row:
+        #         button_row.append([btn])
+        #         counter_btn += 1
+        #     else:
+        #         buttons.append(button_row)
+        #         button_ro
+        #         counter_btn = 0
+
+
+
+
+
+
+
+            # if counter < max_time_in_row:
+            #     buttons_row.append(time_button)
+            #     counter += 1
+            # else:
+            #
+            #     counter = 0
+
+
 
         back_button = {
             'text': 'Go back',
@@ -333,40 +416,7 @@ class TelegramHandler:
 
 
 
-class MessageHandler(TelegramHandler):
-    def __init__(self, data):
-        self.user = User(**data.get('from'))
-        self.text = data.get('text')
-        self.check_user_exist()
 
-    def check_user_exist(self):
-        # check if user_id is in DB
-        client_list_with_id = db.session.query(Client).filter(Client.tg_id == self.user.chat_id).all()
-        if len(client_list_with_id) < 1:
-            # add a new client to DB
-            client = Client(tg_id=self.user.chat_id, name=self.user.name)
-            db.session.add(client)
-            db.session.commit()
-            self.send_hello_message()
-
-    def handle(self):
-        match self.text:
-            case '/start':
-                self.show_start_menu()
-            case '/procedures':
-                self.show_procedure_list()
-            case '/address':
-                self.show_how_to_get_us()
-            case '/about':
-                self.show_about_us()
-            case _:
-                self.send_message(Messages.DEFAULT)
-
-
-class CallbackHandler(TelegramHandler):
-    def __init__(self, data):
-        self.user = User(**data.get('from'))
-        self.callback_data = json.loads(data.get("data"))
 
     def handle(self):
         match self.callback_data.get("type"):
@@ -393,14 +443,12 @@ class CallbackHandler(TelegramHandler):
                         self.show_about_us()
 
             case 'sel_procedure':       # client has selected procedure
-                print(389)
-                procedure_id = self.callback_data.get("procedure_id")
-                self.show_available_days(procedure_id)
+                self.user.selected_procedure = self.callback_data.get("id")
+                self.show_available_days()
 
             case 'sel_date':
-                selected_date = self.callback_data.get("date")
-                procedure_id = self.callback_data.get("procedure_id")
-                self.show_available_time(selected_date, procedure_id)
+                self.user.selected_date = datetime.strptime(self.callback_data.get("date"), '%Y-%m-%d')
+                self.show_available_time()
 
             case 'sel_time':
                 procedure_id = self.callback_data.get("pr_id")

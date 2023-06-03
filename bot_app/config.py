@@ -24,7 +24,7 @@ class Messages:
     SCHEDULED = 'We are waiting for you '
     NON_SCHEDULED = "You have no scheduled visits yet."
     CHOOSE_DAY = "Available days:"
-    CHOOSE_TIME = "Available time"
+    CHOOSE_TIME = "Available time:"
     DEFAULT = "Sorry, I don't understand you, please try again."
     CONFIRMED = "Your visit booked!"
 
