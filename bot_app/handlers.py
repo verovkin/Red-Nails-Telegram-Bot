@@ -1,12 +1,13 @@
-
+import datetime
 import json
 from pprint import pprint
 from flask import request
 import requests
 from bot_app import app, db
-from .config import Messages, AppConfig, select_options
+from .config import Messages, AppConfig, select_options, WorkingSetting
 from .models import *
-
+from datetime import date, timedelta, datetime
+import time
 
 BOT_TOKEN = app.config.get('BOT_TOKEN')
 TG_URL = 'https://api.telegram.org/bot' + BOT_TOKEN
@@ -25,24 +26,23 @@ class User:
 
 
 class TelegramHandler:
-    # users = None
 
     def send_markup_message(self, text, markup):
         data = {
             'chat_id': self.user.chat_id,
             'text': text,
             'reply_markup': markup,
+            'parse_mode': 'HTML',
         }
         requests.post(f'{TG_URL}/sendMessage', json=data)
-
 
     def send_message(self, text):
         data = {
             'chat_id': self.user.chat_id,
             'text': text,
+            'parse_mode': 'HTML',
         }
         requests.post(f'{TG_URL}/sendMessage', json=data)
-
 
     def send_hello_message(self):
         self.send_message(Messages.WELCOME)
@@ -52,7 +52,7 @@ class TelegramHandler:
 
         for option in select_options:
             menu_button = {
-                'text': f"{option.get('id')} - {option.get('name')}",
+                'text': option.get('name'),
                 'callback_data': json.dumps(
                     {
                         'type': 'menu',
@@ -66,11 +66,8 @@ class TelegramHandler:
         }
         self.send_markup_message(Messages.CHOICE, markup)
 
-
-
-
-
     def show_procedure_list(self):
+        print("==show procedures")
         buttons = []
         procedures = db.session.query(Procedure).all()
 
@@ -102,10 +99,8 @@ class TelegramHandler:
 
         self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
-
     def show_how_to_get_us(self):
         buttons = []
-        #
         menu_button = {
             'text': "Show in Google Maps",
             'url': Messages.ADDRESS_FOR_URL,
@@ -144,12 +139,160 @@ class TelegramHandler:
         #
         # self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
-
-
-
-
     def show_about_us(self):
-        self.send_message(Messages.ABOUT_US)
+        buttons = []
+        back_button = {
+            'text': 'Go back',
+            'callback_data': json.dumps(
+                {
+                    'type': "back",
+                    'id': 1,  # back to level 1
+                }
+            ),
+        }
+        buttons.append([back_button])
+        markup = {
+            'inline_keyboard': buttons
+        }
+        self.send_markup_message(Messages.ABOUT_US, markup)
+
+    def show_records(self):
+        client_records = db.session.query(Record, Client, Procedure).join(Client).join(Procedure).filter(Client.tg_id == self.user.chat_id).all()
+
+        # if no client records
+        if len(client_records) < 1:
+            buttons = []
+            back_button = {
+                'text': 'Go back',
+                'callback_data': json.dumps(
+                    {
+                        'type': "back",
+                        'id': 1,  # back to level 1
+                    }
+                ),
+            }
+            buttons.append([back_button])
+            markup = {
+                'inline_keyboard': buttons
+            }
+            self.send_markup_message(Messages.NON_SCHEDULED, markup)
+
+        # if records exists
+        else:
+            pass
+            # for client_record in client_records:
+            #     buttons = []
+            #     client_record_button = {
+            #         'text': f'{client_record.pro} ({procedure.duration_minutes}min) - {procedure.price}UAH',
+            #         'callback_data': json.dumps(
+            #             {
+            #                 'type': 'procedure',
+            #                 'id': procedure.id
+            #             }
+            #         ),
+            #     }
+            #         buttons.append([procedure_button])
+            #
+            #     back_button = {
+            #         'text': 'Go back',
+            #         'callback_data': json.dumps(
+            #             {
+            #                 'type': "back",
+            #                 'id': 1,
+            #             }
+            #         ),
+            #     }
+            #     buttons.append([back_button])
+            #     markup = {
+            #         'inline_keyboard': buttons
+            #     }
+            #
+            #     self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
+
+    def show_available_days(self):
+        buttons = []
+        for i in range(WorkingSetting.SHOW_NUMBER_OF_DAYS):
+            the_date = date.today() + timedelta(days=i)
+            date_to_show = the_date.strftime("%a %d %b")
+
+            date_button = {
+                'text': date_to_show,
+                'callback_data': json.dumps(
+                    {
+                        'type': 'date',
+                        'date': str(the_date),
+                    }
+                ),
+            }
+
+            buttons.append([date_button])
+
+        back_button = {
+            'text': 'Go back',
+            'callback_data': json.dumps(
+                {
+                    'type': "back",
+                    'id': 1,  # back to level 1
+                }
+            ),
+        }
+        buttons.append([back_button])
+        markup = {'inline_keyboard': buttons}
+        self.send_markup_message(Messages.CHOOSE_DAY, markup)
+
+
+    def show_available_time(self, the_date):
+        buttons = []
+        selected_day = datetime.strptime(the_date, '%Y-%m-%d').date()
+        print("selecting time")
+        print("selected date = ", selected_day)
+
+        time_delta = datetime.timedelta(minutes=30)
+        selected_day.hour = WorkingSetting.WORKING_HOUR_START
+        selected_day.minutes = 0
+
+        working_day_end = selected_day
+        working_day_end.hour = WorkingSetting.WORKING_HOUR_END
+        working_day_end.minutes = 0
+
+        timer = selected_day
+
+        while timer < working_day_end:
+            print(timer)
+            timer += time_delta
+
+
+        # for time_start in range(WorkingSetting.WORKING_HOURS_START):
+        #     the_date = date.today() + timedelta(days=i)
+        #     date_to_show = the_date.strftime("%a %d %b")
+        #
+        #     date_button = {
+        #         'text': date_to_show,
+        #         'callback_data': json.dumps(
+        #             {
+        #                 'type': 'date',
+        #                 'id': str(the_date),
+        #             }
+        #         ),
+        #     }
+        #     buttons.append([date_button])
+        #
+        # back_button = {
+        #     'text': 'Go back',
+        #     'callback_data': json.dumps(
+        #         {
+        #             'type': "back",
+        #             'id': 1,  # back to level 1
+        #         }
+        #     ),
+        # }
+        # buttons.append([back_button])
+        # markup = {'inline_keyboard': buttons}
+        # self.send_markup_message(Messages.CHOOSE_TIME, markup)
+
+        self.send_message("yo")
+
+
 
 
 
@@ -210,9 +353,10 @@ class CallbackHandler(TelegramHandler):
                         self.show_about_us()
 
             case 'procedure':
-                match self.callback_data.get("id"):
-                    case 1:
-                        pass
-                    case 2:
-                        pass
+                self.show_available_days()
+
+            case 'date':
+                the_date = self.callback_data.get("date")
+                self.show_available_time(the_date)
+
 

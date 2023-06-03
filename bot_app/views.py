@@ -1,5 +1,6 @@
 from pprint import pprint
 
+import werkzeug.exceptions
 
 from bot_app import app, db
 from flask import request, jsonify, render_template
@@ -19,8 +20,6 @@ def index():
 
 @app.post('/')
 def handler():
-    pprint(request.json)
-
     if message := request.json.get('message'):
         handler = MessageHandler(message)
     elif callback := request.json.get('callback_query'):
@@ -49,3 +48,7 @@ def procedures_list():
     procedures = db.session.query(Procedure).all()
     return render_template('procedures.j2', procedures=procedures)
 
+
+@app.errorhandler(werkzeug.exceptions.NotFound)
+def default_404(e):
+    return render_template('404.j2'), 404

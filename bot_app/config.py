@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -13,13 +14,18 @@ class AppConfig:
     BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 
+
 class Messages:
-    WELCOME = 'Hi and welcome, to our Red Nail Studio!'
+    WELCOME = 'Hi and welcome, to our <b>Red Nail Studio!<b>'
     CHOICE = 'Please make your choice:'
     CHOOSE_PROCEDURE = 'Choose procedure:'
-    ADDRESS_TEXT = "You can find us here:\nRed Nail Studio, 37 The Green, Aberdeen AB11 6NY, UK"
+    ADDRESS_TEXT = "<b>You can find us here:</b>\n<i>Red Nail Studio, 37 The Green, Aberdeen AB11 6NY, UK</i>"
     ADDRESS_FOR_URL = "https://goo.gl/maps/RZAHjuneLTZHrr1F7"
-    ABOUT_US = 'We are the best Nail Studio in the Universe, we can do simultaneously not only right hand, but also left hand!'
+    ABOUT_US = 'We are the best <b>Nail Studio</b> in the Universe, we can do simultaneously not only right hand, but also left hand!'
+    SCHEDULED = 'We are waiting for you '
+    NON_SCHEDULED = "You have not scheduled your visit yet."
+    CHOOSE_DAY = "Available days:"
+    CHOOSE_TIME = "Available time"
     DEFAULT = "Sorry, I don't understand you, please try again."
 
 
@@ -30,3 +36,8 @@ select_options = [
     {'id': 4, 'type': 'menu', 'name': 'About us'},
 ]
 
+
+class WorkingSetting:
+    WORKING_HOUR_START = 10
+    WORKING_HOUR_END = 20
+    SHOW_NUMBER_OF_DAYS = 7
