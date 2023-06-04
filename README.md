@@ -1,4 +1,7 @@
-## Dmytro Verovkin
-# final project
-# tg_bot_rednails
-Telegram Bot for Nails Studio
+# Red Nails Studio Telegram Bot
+## by Dmytro Verovkin
+### Final Course project
+
+Laba school  
+Python developer course  
+Mentor Oleksii Klymenok

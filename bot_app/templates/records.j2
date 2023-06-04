@@ -8,7 +8,6 @@
                         <td>Date Time</td>
                         <td>Client</td>
                         <td>Procedure</td>
-                        <td>Duration</td>
                         <td>Price</td>
                     </tr>
                 </thead>
@@ -19,7 +18,6 @@
                         <td>{{ record.datetime_visit }}</td>
                         <td>{{ client.name }}</td>
                         <td>{{ procedure.name }}</td>
-                        <td>{{ procedure.duration_minutes }} min</td>
                         <td>{{ procedure.price }} UAH</td>
                     </tr>
                {% endfor %}
@@ -27,6 +25,3 @@
             </table>
 
 {% endblock %}
-
-
-

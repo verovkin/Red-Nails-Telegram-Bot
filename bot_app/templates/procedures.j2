@@ -7,7 +7,6 @@
                         <td>#</td>
                         <td>Name</td>
                         <td>Price</td>
-                        <td>Duration</td>
                     </tr>
                 </thead>
 
@@ -16,13 +15,9 @@
                         <td>{{ procedure.id }}</td>
                         <td>{{ procedure.name }}</td>
                         <td>{{ procedure.price }} UAH</td>
-                        <td>{{ procedure.duration_minutes }} min</td>
                     </tr>
                {% endfor %}
 
             </table>
 
 {% endblock %}
-
-
-

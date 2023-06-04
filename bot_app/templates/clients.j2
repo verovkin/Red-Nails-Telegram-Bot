@@ -1,0 +1,27 @@
+{% extends "base.j2" %}
+{% block content %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <td>#</td>
+                        <td>Name</td>
+                        <td>Chat ID</td>
+                        <td>Date added</td>
+                    </tr>
+                </thead>
+
+               {% for client in clients %}
+                    <tr>
+                        <td>{{ client.id }}</td>
+                        <td>{{ client.name }}</td>
+                        <td>{{ client.tg_id }}</td>
+                        <td>{{ client.date_added }}</td>
+                    </tr>
+               {% endfor %}
+
+            </table>
+{% endblock %}
+
+
+
