@@ -26,8 +26,39 @@ class User:
         self.selected_time = None
         self.selected_procedure = None
 
+    def set_selected_procedure(self, selected_procedure):
+        self.selected_procedure = selected_procedure
+        print("selected procedure in user = ", self.selected_procedure)
+
+    def set_selected_date(self, selected_date):
+        self.selected_date = selected_date
+        print("selected date in user = ", self.selected_date)
+
+    def set_selected_time(self, selected_time):
+        self.selected_time = selected_time
+        print("selected time in user = ", self.selected_time)
+
 
 class TelegramHandler:
+    def __init__(self):
+        pass
+
+    def split_buttons_on_rows(self, buttons_tmp, max_in_row):
+        buttons = []
+        button_row = []
+
+        counter_in_row = 0
+        while len(buttons_tmp) > 0:
+            if counter_in_row < max_in_row:
+                button_row.append(buttons_tmp.pop(0))
+                counter_in_row += 1
+                if len(buttons_tmp) == 0:
+                    buttons.append(button_row)
+            else:
+                buttons.append(button_row)
+                button_row = []
+                counter_in_row = 0
+        return buttons
 
     def send_markup_message(self, text, markup):
         data = {
@@ -91,22 +122,6 @@ class TelegramHandler:
         self.send_markup_message(Messages.ADDRESS_TEXT, markup)
 
 
-
-        # procedures = db.session.query(Procedure).all()
-        #
-        # for procedure in procedures:
-        #     procedure_button = {
-        #         'text': f'{procedure.name} ({procedure.duration_minutes}min) - {procedure.price}UAH',
-        #         'callback_data': json.dumps(
-        #             {'procedure_id': procedure.id}
-        #         ),
-        #     }
-        #     buttons.append([procedure_button])
-        # markup = {
-        #     'inline_keyboard': buttons
-        # }
-        #
-        # self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
     def show_about_us(self):
         buttons = []
@@ -257,7 +272,7 @@ class CallbackHandler(TelegramHandler):
         self.user.selected_date = None
         self.user.selected_time = None
 
-        buttons = []
+        buttons_tmp = []
 
         for i in range(WorkingSetting.SHOW_NUMBER_OF_DAYS):
 
@@ -273,7 +288,7 @@ class CallbackHandler(TelegramHandler):
                     }
                 ),
             }
-            buttons.append([date_button])
+            buttons_tmp.append(date_button)
 
         back_button = {
             'text': 'Go back',
@@ -284,9 +299,9 @@ class CallbackHandler(TelegramHandler):
                 }
             ),
         }
-        buttons.append([back_button])
+        buttons_tmp.append(back_button)
 
-        markup = {'inline_keyboard': buttons}
+        markup = {'inline_keyboard': self.split_buttons_on_rows(buttons_tmp, 3)}
         self.send_markup_message(Messages.CHOOSE_DAY, markup)
 
     def show_available_time(self):
@@ -304,7 +319,6 @@ class CallbackHandler(TelegramHandler):
 
             time_txt = day_start.strftime("%-H:%M")
 
-
             time_button = {
                 'text': time_txt,
                 'callback_data': json.dumps(
@@ -316,51 +330,7 @@ class CallbackHandler(TelegramHandler):
                 ),
             }
             day_start += time_delta
-
             buttons_tmp.append(time_button)
-
-
-        max_time_in_row = 3
-        num_of_rows = len(buttons_tmp) // max_time_in_row
-        buttons = []
-        button_row = []
-        counter_btn = 0
-
-        counter_in_row = 0
-        while len(buttons_tmp) > 0:
-            if counter_in_row < max_time_in_row:
-                button_row.append([buttons_tmp.pop(0)])
-                counter_in_row += 1
-                print(button_row)
-            else:
-                buttons.append(button_row)
-                button_row = []
-                counter_in_row = 0
-                print(button_row)
-
-        # for btn in buttons_tmp:
-        #     if counter_btn < max_time_in_row:
-        #         button_row.append([btn])
-        #         counter_btn += 1
-        #     else:
-        #         buttons.append(button_row)
-        #         button_ro
-        #         counter_btn = 0
-
-
-
-
-
-
-
-            # if counter < max_time_in_row:
-            #     buttons_row.append(time_button)
-            #     counter += 1
-            # else:
-            #
-            #     counter = 0
-
-
 
         back_button = {
             'text': 'Go back',
@@ -371,47 +341,50 @@ class CallbackHandler(TelegramHandler):
                 }
             ),
         }
-        buttons.append([back_button])
-        markup = {'inline_keyboard': buttons}
+        buttons_tmp.append(back_button)
+
+        markup = {'inline_keyboard': self.split_buttons_on_rows(buttons_tmp, 3)}
         self.send_markup_message(Messages.CHOOSE_TIME, markup)
 
 
-    def show_confirm(self, procedure_id, selected_datetime):
-
+    def show_confirm(self):
+        print("in confirm")
         text = f"You are booking a"   #TODO name of procedure add
-        self.send_message(text)
 
-        buttons = []
-
-        confirmation_button = [
-            {
-                'text': 'YES',
-                'callback_data': json.dumps(
-                    {
-                        'type': 'confirm',
-                        'datetime': selected_datetime,
-                        'procedure_id': procedure_id,
-                    }
-                ),
-            },
-            {
-                'text': 'NO',
-                'callback_data': json.dumps(
-                    {
-                        'type': 'back',
-                        'back_to': 'start',
-                    }
-                ),
-            },
+        buttons = [
+            [
+                {
+                    'text': 'YES',
+                    'callback_data': json.dumps(
+                        {
+                            'type': 'confirm',
+                        }
+                    ),
+                },
+                {
+                    'text': 'NO',
+                    'callback_data': json.dumps(
+                        {
+                            'type': 'back',
+                            'back_to': 'start',
+                        }
+                    ),
+                }
+            ]
         ]
 
-        buttons.append([confirmation_button])
 
+        markup = {'inline_keyboard': buttons}
+        self.send_markup_message(text, markup)
+        print("ok")
 
-    def save_record_to_db(self, selected_datetime, procedure_id):
-        print("date time = ", selected_datetime)
-        print("pprocedure id =", procedure_id)
+    def save_record_to_db(self):
+        print("CONFIRM")
+        print("sel date = ", self.user.selected_date)
+        print("date time = ", self.user.selected_time)
+        print("pprocedure id =", self.user.selected_procedure)
         # new_record = Record(client_id=self.user.id, )
+        pprint(self.user)
         self.send_message(Messages.CONFIRMED)
 
 
@@ -443,22 +416,33 @@ class CallbackHandler(TelegramHandler):
                         self.show_about_us()
 
             case 'sel_procedure':       # client has selected procedure
-                self.user.selected_procedure = self.callback_data.get("id")
+                # self.user.selected_procedure = self.callback_data.get("id")
+                self.user.set_selected_procedure(self.callback_data.get("id"))
+                pprint(self.user)
                 self.show_available_days()
 
             case 'sel_date':
-                self.user.selected_date = datetime.strptime(self.callback_data.get("date"), '%Y-%m-%d')
+                self.user.set_selected_date(datetime.strptime(self.callback_data.get("date"), '%Y-%m-%d'))
+                pprint(self.user)
+
                 self.show_available_time()
 
             case 'sel_time':
-                procedure_id = self.callback_data.get("pr_id")
-                selected_datetime = self.callback_data.get("datetime")
-                print(f"procedure {procedure_id} at {selected_datetime}")
-                self.show_confirm(procedure_id, selected_datetime)
+                self.user.set_selected_time(self.callback_data.get("time"))
+                self.show_confirm()
 
             case 'confirm':
-                procedure_id = self.callback_data.get("procedure_id")
-                selected_datetime = self.callback_data.get("datetime")
-                self.save_record_to_db(selected_datetime, procedure_id)
+                print("in case")
+                pprint(self.user)
+
+                # procedure_id = self.callback_data.get("procedure_id")
+                # selected_datetime = self.callback_data.get("datetime")
+                print("sel date = ", self.user.selected_date)
+                print("date time = ", self.user.selected_time)
+                print("pprocedure id =", self.user.selected_procedure)
+                # new_record = Record(client_id=self.user.id, )
+                pprint(self.user)
+
+                self.save_record_to_db()
 
 

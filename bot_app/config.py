@@ -39,5 +39,5 @@ select_options = [
 
 class WorkingSetting:
     WORKING_HOUR_START = 10
-    WORKING_HOUR_END = 19
+    WORKING_HOUR_END = 15
     SHOW_NUMBER_OF_DAYS = 7
