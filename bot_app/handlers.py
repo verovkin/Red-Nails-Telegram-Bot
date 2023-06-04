@@ -22,8 +22,9 @@ class User:
         self.is_bot = is_bot
         self.language_code = language_code
         self.username = username
+
         self.selected_date = None
-        self.selected_time = None
+        self.selected_time = 'not set'
         self.selected_procedure = None
 
     def set_selected_procedure(self, selected_procedure):
@@ -160,14 +161,15 @@ class MessageHandler(TelegramHandler):
         match self.text:
             case '/start':
                 self.show_start_menu()
-            case '/procedures':
-                self.show_procedure_list()
-            case '/address':
-                self.show_how_to_get_us()
-            case '/about':
-                self.show_about_us()
+            # case '/procedures':
+            #     self.show_procedure_list()
+            # case '/address':
+            #     self.show_how_to_get_us()
+            # case '/about':
+            #     self.show_about_us()
             case _:
-                self.send_message(Messages.DEFAULT)
+                self.show_start_menu()
+                # self.send_message(Messages.DEFAULT)
 
 
 class CallbackHandler(TelegramHandler):
@@ -303,7 +305,7 @@ class CallbackHandler(TelegramHandler):
         self.send_markup_message(Messages.CHOOSE_DAY, markup)
 
     def show_available_time(self):
-        self.user.selected_time = None
+        self.user.selected_time = "222"
         print("show times")
         # procedure_duration = db.session.query(Procedure.duration_minutes).filter_by(id=self.user.selected_procedure).one()[0]
 
@@ -426,13 +428,16 @@ class CallbackHandler(TelegramHandler):
                 self.show_available_time()
 
             case 'sel_time':
-                self.user.set_selected_time(self.callback_data.get("time"))
+                tttime = self.callback_data.get("time")
+                print("got time = ", tttime)
+                self.user.selected_time = tttime
+                print(self.user.selected_time)
                 self.show_confirm()
 
             case 'confirm':
                 print("in case")
                 pprint(self.user)
-
+                print("now in confirm ttt", self.user.selected_time)
                 # procedure_id = self.callback_data.get("procedure_id")
                 # selected_datetime = self.callback_data.get("datetime")
                 print("sel date = ", self.user.selected_date)
