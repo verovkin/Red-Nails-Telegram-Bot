@@ -40,8 +40,6 @@ class User:
 
 
 class TelegramHandler:
-    def __init__(self):
-        pass
 
     def split_buttons_on_rows(self, buttons_tmp, max_in_row):
         buttons = []
