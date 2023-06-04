@@ -13,14 +13,14 @@
                     </tr>
                 </thead>
 
-               {% for record, client, procedure in procedures %}
+               {% for record, client, procedure in records %}
                     <tr>
                         <td>{{ record.id }}</td>
-                        <td>{{ record.datetime }}</td>
+                        <td>{{ record.datetime_visit }}</td>
                         <td>{{ client.name }}</td>
                         <td>{{ procedure.name }}</td>
-                        <td>{{ procedure.duration_minutes }}</td>
-                        <td>{{ procedure.price }}</td>
+                        <td>{{ procedure.duration_minutes }} min</td>
+                        <td>{{ procedure.price }} UAH</td>
                     </tr>
                {% endfor %}
 

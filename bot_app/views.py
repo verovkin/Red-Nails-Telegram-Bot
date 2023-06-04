@@ -39,6 +39,7 @@ def clients_list():
 @app.route('/records')
 def records_list():
     records = db.session.query(Record, Client, Procedure).join(Client).join(Procedure).all()
+    pprint(records)
     return render_template('records.j2', records=records)
 
 

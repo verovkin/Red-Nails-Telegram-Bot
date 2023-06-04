@@ -21,12 +21,13 @@ class Messages:
     ADDRESS_TEXT = "<b>You can find us here:</b>\n<i>Red Nail Studio, 37 The Green, Aberdeen AB11 6NY, UK</i>"
     ADDRESS_FOR_URL = "https://goo.gl/maps/RZAHjuneLTZHrr1F7"
     ABOUT_US = 'We are the best <b>Nail Studio</b> in the Universe, we can do simultaneously not only right hand, but also left hand!'
-    SCHEDULED = 'We are waiting for you '
+    SCHEDULED = 'We are waiting for you: '
     NON_SCHEDULED = "You have no scheduled visits yet."
     CHOOSE_DAY = "Available days:"
     CHOOSE_TIME = "Available time:"
     DEFAULT = "Sorry, I don't understand you, please try again."
-    CONFIRMED = "Your visit booked!"
+    CONFIRMED = "<b>Your visit booked!</b>"
+    NO_THIS_RECORD = "Sorry, we have no information about this visit"
 
 
 select_options = [
