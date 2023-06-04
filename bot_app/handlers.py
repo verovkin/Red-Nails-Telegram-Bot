@@ -1,14 +1,10 @@
 import datetime
 import json
-from pprint import pprint
-from flask import request
 import requests
 from bot_app import app, db
 from .config import Messages, AppConfig, select_options, WorkingSetting
 from .models import *
 from datetime import date, timedelta, datetime
-import time
-# import emoji
 
 
 BOT_TOKEN = app.config.get('BOT_TOKEN')
@@ -242,9 +238,10 @@ class CallbackHandler(TelegramHandler):
             self.send_message(Messages.NO_THIS_RECORD)
             self.show_start_menu()
         else:  # exists
-            for record, client, procedure in client_records:
-                datetime_str = record.datetime_visit.strftime("%a, %-d %b, at %-H:%M")
+            record, client, procedure = client_records[0]
+            datetime_str = record.datetime_visit.strftime("%a, %-d %b, at %-H:%M")
             message = f"Your visit at <b>{datetime_str}</b> was canceled."
+
             Record.query.filter_by(id=record_id).delete()
             db.session.commit()
 
@@ -332,12 +329,6 @@ class CallbackHandler(TelegramHandler):
         for record, procedure in schedule_query:
             busy_times.append(record.datetime_visit)
 
-
-
-
-
-
-
         date_str = day_start.strftime("%Y-%m-%d")
         buttons_tmp = []
 
@@ -408,16 +399,6 @@ class CallbackHandler(TelegramHandler):
         markup = {'inline_keyboard': buttons}
         self.send_markup_message(message, markup)
 
-    def save_record_to_db(self, selected_procedure, selected_date, selected_time):
-        print("IN CONFIRM")
-        print("sel date = ", selected_date)
-        print("date time = ", selected_time)
-        print("pprocedure id =", selected_procedure)
-        # new_record = Record(client_id=self.user.id, )
-        pprint(self.user)
-        self.send_message(Messages.CONFIRMED)
-
-
     def handle(self):
         match self.callback_data.get("s"):
             # button BACK
@@ -470,16 +451,8 @@ class CallbackHandler(TelegramHandler):
 
             case 'y':  # CONFIRMED
                 selected_procedure = self.callback_data.get("p")
-                # selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
                 selected_date = self.callback_data.get("d")
                 selected_time = self.callback_data.get("t")
-
-                # print("in Y - SAID YES CONFIRMED TIME TO SAVE TO DB")
-                # print("time", selected_time)
-                # print("date = ", selected_date)
-                # print("pprocedure id =", selected_procedure)
-                # print("u")
-
 
                 # SAVING TO DB
                 client_id = db.session.query(Client.id).filter(Client.tg_id == self.user.chat_id).one()[0]
@@ -492,7 +465,6 @@ class CallbackHandler(TelegramHandler):
                 db.session.commit()
 
                 self.send_message(Messages.CONFIRMED)
-
                 self.show_start_menu()
 
             case 'edit':
