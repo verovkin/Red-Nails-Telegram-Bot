@@ -20,6 +20,7 @@ def index():
 
 @app.post('/')
 def handler():
+    # pprint(request.json)
     if message := request.json.get('message'):
         handler = MessageHandler(message)
     elif callback := request.json.get('callback_query'):

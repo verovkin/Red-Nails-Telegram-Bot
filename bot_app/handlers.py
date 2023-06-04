@@ -23,21 +23,17 @@ class User:
         self.language_code = language_code
         self.username = username
 
-        self.selected_date = None
-        self.selected_time = 'not set'
-        self.selected_procedure = None
-
-    def set_selected_procedure(self, selected_procedure):
-        self.selected_procedure = selected_procedure
-        print("selected procedure in user = ", self.selected_procedure)
-
-    def set_selected_date(self, selected_date):
-        self.selected_date = selected_date
-        print("selected date in user = ", self.selected_date)
-
-    def set_selected_time(self, selected_time):
-        self.selected_time = selected_time
-        print("selected time in user = ", self.selected_time)
+    # def set_selected_procedure(self, selected_procedure):
+    #     self.selected_procedure = selected_procedure
+    #     print("selected procedure in user = ", self.selected_procedure)
+    #
+    # def set_selected_date(self, selected_date):
+    #     self.selected_date = selected_date
+    #     print("selected date in user = ", self.selected_date)
+    #
+    # def set_selected_time(self, selected_time):
+    #     self.selected_time = selected_time
+    #     print("selected time in user = ", self.selected_time)
 
 
 class TelegramHandler:
@@ -87,7 +83,7 @@ class TelegramHandler:
                 'text': option.get('name'),
                 'callback_data': json.dumps(
                     {
-                        'type': 'menu',
+                        's': 'menu',
                         'id': option.get('id'),
                     }
                 ),
@@ -119,8 +115,6 @@ class TelegramHandler:
             'inline_keyboard': buttons
         }
         self.send_markup_message(Messages.ADDRESS_TEXT, markup)
-
-
 
     def show_about_us(self):
         buttons = []
@@ -161,12 +155,12 @@ class MessageHandler(TelegramHandler):
         match self.text:
             case '/start':
                 self.show_start_menu()
-            # case '/procedures':
-            #     self.show_procedure_list()
-            # case '/address':
-            #     self.show_how_to_get_us()
-            # case '/about':
-            #     self.show_about_us()
+            case '/procedures':
+                self.show_procedure_list()
+            case '/address':
+                self.show_how_to_get_us()
+            case '/about':
+                self.show_about_us()
             case _:
                 self.show_start_menu()
                 # self.send_message(Messages.DEFAULT)
@@ -177,7 +171,9 @@ class CallbackHandler(TelegramHandler):
         self.user = User(**data.get('from'))
         self.callback_data = json.loads(data.get("data"))
 
-
+        # self.selected_date = 'not set'
+        # self.selected_time = 'not set'
+        # self.selected_procedure = 'not set'
 
     def show_records(self):
         client_records = db.session.query(Record, Client, Procedure).join(Client).join(Procedure).filter(Client.tg_id == self.user.chat_id).all()
@@ -233,11 +229,7 @@ class CallbackHandler(TelegramHandler):
             #     self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
     def show_procedure_list(self):
-        self.user.selected_procedure = None
-        self.user.selected_date = None
-        self.user.selected_time = None
-
-        print("==show procedures")
+        print("==showing procedures")
         buttons = []
         procedures = db.session.query(Procedure).all()
 
@@ -246,8 +238,8 @@ class CallbackHandler(TelegramHandler):
                 'text': f'{procedure.name} ({procedure.duration_minutes}min) - {procedure.price}UAH',
                 'callback_data': json.dumps(
                     {
-                        'type': 'sel_procedure',
-                        'id': procedure.id
+                        's': 'p',
+                        'p': procedure.id
                     }
                 ),
             }
@@ -257,8 +249,8 @@ class CallbackHandler(TelegramHandler):
             'text': 'Go back',
             'callback_data': json.dumps(
                 {
-                    'type': "back",
-                    'back_to': 'start',
+                    's': "back",
+                    'b': 'start',
                  }
             ),
         }
@@ -268,23 +260,22 @@ class CallbackHandler(TelegramHandler):
         }
         self.send_markup_message(Messages.CHOOSE_PROCEDURE, markup)
 
-    def show_available_days(self):
-        self.user.selected_date = None
-        self.user.selected_time = None
-
+    def show_available_days(self, selected_procedure):
         buttons_tmp = []
 
         for i in range(WorkingSetting.SHOW_NUMBER_OF_DAYS):
 
             the_date = date.today() + timedelta(days=i)
+            the_date_str = the_date.strftime("%Y-%m-%d")
             date_to_show = the_date.strftime("%a, %d %b")
 
             date_button = {
                 'text': date_to_show,
                 'callback_data': json.dumps(
                     {
-                        'type': 'sel_date',
-                        'date': str(the_date),
+                        's': 'd',
+                        'p': selected_procedure,
+                        'd': the_date_str,
                     }
                 ),
             }
@@ -294,8 +285,9 @@ class CallbackHandler(TelegramHandler):
             'text': 'Go back',
             'callback_data': json.dumps(
                 {
-                    'type': 'back',
-                    'back_to': 'procedures'
+                    's': 'back',
+                    'b': 'p',
+                    'p': selected_procedure
                 }
             ),
         }
@@ -304,28 +296,34 @@ class CallbackHandler(TelegramHandler):
         markup = {'inline_keyboard': self.split_buttons_on_rows(buttons_tmp, 3)}
         self.send_markup_message(Messages.CHOOSE_DAY, markup)
 
-    def show_available_time(self):
-        self.user.selected_time = "222"
+    def show_available_time(self, selected_procedure, selected_date):
+        # self.selected_time = None
         print("show times")
         # procedure_duration = db.session.query(Procedure.duration_minutes).filter_by(id=self.user.selected_procedure).one()[0]
 
-        day_start = self.user.selected_date.replace(hour=WorkingSetting.WORKING_HOUR_START)
-        day_end = self.user.selected_date.replace(hour=WorkingSetting.WORKING_HOUR_END)
+        day_start = selected_date.replace(hour=WorkingSetting.WORKING_HOUR_START)
+        print("selected day = ", day_start)
+        day_end = selected_date.replace(hour=WorkingSetting.WORKING_HOUR_END)
         time_delta = timedelta(minutes=30)
+
+        date_str = day_start.strftime("%Y-%m-%d")
 
         buttons_tmp = []
 
         while day_start < day_end:
 
             time_txt = day_start.strftime("%-H:%M")
+            time_str = day_start.strftime("%H:%M")
+
 
             time_button = {
                 'text': time_txt,
                 'callback_data': json.dumps(
                     {
-                        'type': 'sel_time',
-                        'time': time_txt,
-                        # 'datetime': str(day_start),
+                        's': 't',
+                        'd': date_str,
+                        't': time_str,
+                        'p': selected_procedure,
                     }
                 ),
             }
@@ -336,8 +334,10 @@ class CallbackHandler(TelegramHandler):
             'text': 'Go back',
             'callback_data': json.dumps(
                 {
-                    'type': "back",
-                    'back_to': "date",
+                    's': "back",
+                    'b': "d",
+                    'd': date_str,
+                    'p': selected_procedure,
                 }
             ),
         }
@@ -347,105 +347,119 @@ class CallbackHandler(TelegramHandler):
         self.send_markup_message(Messages.CHOOSE_TIME, markup)
 
 
-    def show_confirm(self):
+    def show_confirm(self, selected_procedure, selected_date, selected_time):
         print("in confirm")
-        text = f"You are booking a"   #TODO name of procedure add
+
+        procedure = db.session.query(Procedure).filter_by(id=selected_procedure).all()
+        pprint(procedure)
+        selected_date_str = selected_date.strftime("%a, %d %b")
+        message = f"You are booking a <b>{procedure[0].name}</b> for <b>{procedure[0].price}UAH</b>, on <b>{selected_date_str}</b> at <b>{selected_time}</b>"
+
+        date_str = selected_date.strftime("%Y-%m-%d")
 
         buttons = [
-            [
-                {
-                    'text': 'YES',
-                    'callback_data': json.dumps(
-                        {
-                            'type': 'confirm',
-                        }
-                    ),
-                },
-                {
-                    'text': 'NO',
-                    'callback_data': json.dumps(
-                        {
-                            'type': 'back',
-                            'back_to': 'start',
-                        }
-                    ),
-                }
-            ]
-        ]
-
+            [{
+                'text': 'YES',
+                'callback_data': json.dumps({
+                    's': 'y',
+                    'p': selected_procedure,
+                    'd': date_str,
+                    't': selected_time
+                })
+            },
+            {
+                'text': 'NO',
+                'callback_data': json.dumps({
+                    's': 'back',
+                    'b': 't',
+                    'd': date_str,
+                    'p': selected_procedure
+                })
+            },
+            ]]
 
         markup = {'inline_keyboard': buttons}
-        self.send_markup_message(text, markup)
+        self.send_markup_message(message, markup)
         print("ok")
 
-    def save_record_to_db(self):
-        print("CONFIRM")
-        print("sel date = ", self.user.selected_date)
-        print("date time = ", self.user.selected_time)
-        print("pprocedure id =", self.user.selected_procedure)
+    def save_record_to_db(self, selected_procedure, selected_date, selected_time):
+        print("IN CONFIRM")
+        print("sel date = ", selected_date)
+        print("date time = ", selected_time)
+        print("pprocedure id =", selected_procedure)
         # new_record = Record(client_id=self.user.id, )
         pprint(self.user)
         self.send_message(Messages.CONFIRMED)
 
 
-
-
-
     def handle(self):
-        match self.callback_data.get("type"):
+        match self.callback_data.get("s"):
             # button BACK
             case 'back':
-                match self.callback_data.get("back_to"):
+                match self.callback_data.get("b"):
                     case 'start':
                         self.show_start_menu()
-                    case 'procedures':
+                    case 'p':  # PROCEDURE SELECT
                         self.show_procedure_list()
-                    case 'date':
-                        self.show_available_days()
+                    case 'd':  # DATE SELECT
+                        selected_procedure = self.callback_data.get("p")
+                        self.show_available_days(selected_procedure)
+                    case 't':  # TIME SELECT
+                        selected_procedure = self.callback_data.get("p")
+                        selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
+                        self.show_available_time(selected_procedure, selected_date)
 
             # buttons in MAIN MENU
             case 'menu':
                 match self.callback_data.get("id"):
-                    case 'procedure_list':
+                    case '/procedure_list':
+                        print("main_menu")
                         self.show_procedure_list()
-                    case 'planned_visit':
+                    case '/planned_visit':
+                        print("main_menu")
                         self.show_records()
                     case '/address':
+                        print("main_menu")
                         self.show_how_to_get_us()
                     case '/about':
+                        print("main_menu")
                         self.show_about_us()
 
-            case 'sel_procedure':       # client has selected procedure
-                # self.user.selected_procedure = self.callback_data.get("id")
-                self.user.set_selected_procedure(self.callback_data.get("id"))
-                pprint(self.user)
-                self.show_available_days()
+            case 'p':  # SELECTED PROCEDURE
+                selected_procedure = self.callback_data.get("p")
+                print("IN P - sel procedure")
+                print("selected procedure", selected_procedure)
+                self.show_available_days(selected_procedure)
 
-            case 'sel_date':
-                self.user.set_selected_date(datetime.strptime(self.callback_data.get("date"), '%Y-%m-%d'))
-                pprint(self.user)
+            case 'd':  # SELECTED DAY
+                selected_procedure = self.callback_data.get("p")
+                selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
+                print("IN D - sel day")
+                print("selected procedure", selected_procedure)
+                print("selected date ", selected_date)
+                self.show_available_time(selected_procedure, selected_date)
 
-                self.show_available_time()
+            case 't':  # SELECTED TIME
+                selected_procedure = self.callback_data.get("p")
+                selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
+                selected_time = self.callback_data.get("t")
+                print("IN T - sel time")
+                print("selected procedure", selected_procedure)
+                print("selected date ", selected_date)
+                print("selected time = ", selected_time)
+                self.show_confirm(selected_procedure, selected_date, selected_time)
 
-            case 'sel_time':
-                tttime = self.callback_data.get("time")
-                print("got time = ", tttime)
-                self.user.selected_time = tttime
-                print(self.user.selected_time)
-                self.show_confirm()
+            case 'y':  # CONFIRMED
+                selected_procedure = self.callback_data.get("p")
+                # selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
+                selected_date = self.callback_data.get("d")
+                selected_time = self.callback_data.get("t")
 
-            case 'confirm':
-                print("in case")
-                pprint(self.user)
-                print("now in confirm ttt", self.user.selected_time)
-                # procedure_id = self.callback_data.get("procedure_id")
-                # selected_datetime = self.callback_data.get("datetime")
-                print("sel date = ", self.user.selected_date)
-                print("date time = ", self.user.selected_time)
-                print("pprocedure id =", self.user.selected_procedure)
+                print("in Y - SAID YES CONFIRMED TIME TO SAVE TO DB")
+                print("time", selected_time)
+                print("date = ", selected_date)
+                print("pprocedure id =", selected_procedure)
+
                 # new_record = Record(client_id=self.user.id, )
-                pprint(self.user)
-
-                self.save_record_to_db()
-
-
+                self.send_message("OK")
+                # self.save_record_to_db()

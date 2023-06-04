@@ -30,8 +30,8 @@ class Messages:
 
 
 select_options = [
-    {'id': 'procedure_list', 'type': 'menu', 'name': 'Procedure List'},
-    {'id': 'planned_visit', 'type': 'menu', 'name': 'Your planned visit'},
+    {'id': '/procedure_list', 'type': 'menu', 'name': 'Procedure List'},
+    {'id': '/planned_visit', 'type': 'menu', 'name': 'Your planned visit'},
     {'id': '/address', 'type': 'menu', 'name': 'How to get us'},
     {'id': '/about', 'type': 'menu', 'name': 'About us'},
 ]
