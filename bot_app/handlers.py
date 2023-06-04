@@ -23,18 +23,6 @@ class User:
         self.language_code = language_code
         self.username = username
 
-    # def set_selected_procedure(self, selected_procedure):
-    #     self.selected_procedure = selected_procedure
-    #     print("selected procedure in user = ", self.selected_procedure)
-    #
-    # def set_selected_date(self, selected_date):
-    #     self.selected_date = selected_date
-    #     print("selected date in user = ", self.selected_date)
-    #
-    # def set_selected_time(self, selected_time):
-    #     self.selected_time = selected_time
-    #     print("selected time in user = ", self.selected_time)
-
 
 class TelegramHandler:
 
@@ -89,6 +77,7 @@ class TelegramHandler:
                 ),
             }
             buttons.append([menu_button])
+
         markup = {
             'inline_keyboard': buttons
         }
@@ -134,7 +123,6 @@ class TelegramHandler:
         self.send_markup_message(Messages.ABOUT_US, markup)
 
 
-
 class MessageHandler(TelegramHandler):
     def __init__(self, data):
         self.user = User(**data.get('from'))
@@ -170,7 +158,6 @@ class CallbackHandler(TelegramHandler):
     def __init__(self, data):
         self.user = User(**data.get('from'))
         self.callback_data = json.loads(data.get("data"))
-
 
     def show_records(self):
         client_records = db.session.query(Record, Client, Procedure).join(Client).join(Procedure).filter(Client.tg_id == self.user.chat_id).order_by(Record.datetime_visit).all()
@@ -264,7 +251,6 @@ class CallbackHandler(TelegramHandler):
             self.send_message(message)
             self.show_records()
 
-
     def show_procedure_list(self):
         print("==showing procedures")
         buttons = []
@@ -272,7 +258,7 @@ class CallbackHandler(TelegramHandler):
 
         for procedure in procedures:
             procedure_button = {
-                'text': f'{procedure.name} ({procedure.duration_minutes}min) - {procedure.price}UAH',
+                'text': f'{procedure.name} - {procedure.price}UAH',
                 'callback_data': json.dumps(
                     {
                         's': 'p',
@@ -334,24 +320,31 @@ class CallbackHandler(TelegramHandler):
         self.send_markup_message(Messages.CHOOSE_DAY, markup)
 
     def show_available_time(self, selected_procedure, selected_date):
-        # self.selected_time = None
-        print("show times")
-        # procedure_duration = db.session.query(Procedure.duration_minutes).filter_by(id=self.user.selected_procedure).one()[0]
-
         day_start = selected_date.replace(hour=WorkingSetting.WORKING_HOUR_START)
-        print("selected day = ", day_start)
         day_end = selected_date.replace(hour=WorkingSetting.WORKING_HOUR_END)
-        time_delta = timedelta(minutes=30)
+        time_delta = timedelta(minutes=60)
+
+        print("----- in times")
+        # GET BUSY TIMES
+        schedule_query = db.session.query(Record, Procedure).join(Procedure).filter(Record.datetime_visit >= day_start,
+                                                                                    Record.datetime_visit < day_end).order_by(Record.datetime_visit).all()
+        busy_times = []
+        for record, procedure in schedule_query:
+            busy_times.append(record.datetime_visit)
+
+
+
+
+
+
 
         date_str = day_start.strftime("%Y-%m-%d")
-
         buttons_tmp = []
 
+        print("in loop:")
         while day_start < day_end:
-
             time_txt = day_start.strftime("%-H:%M")
             time_str = day_start.strftime("%H:%M")
-
 
             time_button = {
                 'text': time_txt,
@@ -364,8 +357,9 @@ class CallbackHandler(TelegramHandler):
                     }
                 ),
             }
+            if day_start not in busy_times:
+                buttons_tmp.append(time_button)
             day_start += time_delta
-            buttons_tmp.append(time_button)
 
         back_button = {
             'text': 'Go back',
@@ -382,7 +376,6 @@ class CallbackHandler(TelegramHandler):
 
         markup = {'inline_keyboard': self.split_buttons_on_rows(buttons_tmp, 3)}
         self.send_markup_message(Messages.CHOOSE_TIME, markup)
-
 
     def show_confirm(self, selected_procedure, selected_date, selected_time):
         procedure = db.session.query(Procedure).filter_by(id=selected_procedure).all()
@@ -467,19 +460,12 @@ class CallbackHandler(TelegramHandler):
             case 'd':  # SELECTED DAY
                 selected_procedure = self.callback_data.get("p")
                 selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
-                print("IN D - sel day")
-                print("selected procedure", selected_procedure)
-                print("selected date ", selected_date)
                 self.show_available_time(selected_procedure, selected_date)
 
             case 't':  # SELECTED TIME
                 selected_procedure = self.callback_data.get("p")
                 selected_date = datetime.strptime(self.callback_data.get("d"), '%Y-%m-%d')
                 selected_time = self.callback_data.get("t")
-                print("IN T - sel time")
-                print("selected procedure", selected_procedure)
-                print("selected date ", selected_date)
-                print("selected time = ", selected_time)
                 self.show_confirm(selected_procedure, selected_date, selected_time)
 
             case 'y':  # CONFIRMED
@@ -488,11 +474,11 @@ class CallbackHandler(TelegramHandler):
                 selected_date = self.callback_data.get("d")
                 selected_time = self.callback_data.get("t")
 
-                print("in Y - SAID YES CONFIRMED TIME TO SAVE TO DB")
-                print("time", selected_time)
-                print("date = ", selected_date)
-                print("pprocedure id =", selected_procedure)
-                print("u")
+                # print("in Y - SAID YES CONFIRMED TIME TO SAVE TO DB")
+                # print("time", selected_time)
+                # print("date = ", selected_date)
+                # print("pprocedure id =", selected_procedure)
+                # print("u")
 
 
                 # SAVING TO DB
